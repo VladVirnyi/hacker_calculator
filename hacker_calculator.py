@@ -62,7 +62,10 @@ class HackerCalculator(QWidget):
 
 if __name__ == "__main__":
     app = QApplication([])
-
+    with open("style.qss", "r", encoding="utf-8") as file:
+        style_sheet = (file.read())
+    app.setStyleSheet(style_sheet)
+    
     widget = HackerCalculator()
     widget.resize(800, 600)
     widget.show()
