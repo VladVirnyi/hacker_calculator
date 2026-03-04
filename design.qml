@@ -3,7 +3,7 @@ import QtQuick.Controls
 
 Window {
     visible: true
-    width: 400
+    width: 600
     height: 500
     title: "Hacker Calculator"
     color: "#0d0d0d"
@@ -57,17 +57,56 @@ Window {
         }
 
         Label {
-            text: calculator.result
-            color: "#2bff00"
-            font.family: "Hack"
-            font.pixelSize: 18
-            anchors.horizontalCenter: parent.horizontalCenter
-            onTextChanged: resultFade.restart()
+                id: resultLabel
+                property string finalResult: calculator.result
+                property string charSet: "01ABCDEFGH#!?@$%" // characters for "glitch" effect
+                
+                anchors.horizontalCenter: parent.horizontalCenter
+                color: "#2bff00"
+                font.family: "Hack"
+                font.pixelSize: 22
+                
+                text: "READY TO EXPLOIT..."
 
-            SequentialAnimation on opacity {
-                id: resultFade
-                running: false
-                NumberAnimation { from: 0; to: 1; duration: 600; easing.type: Easing.OutCubic }
+                onFinalResultChanged: {
+                    decryptTimer.count = 0
+                    decryptTimer.start()
+                }
+
+                Timer {
+                    id: decryptTimer
+                    interval: 50
+                    repeat: true
+                    property int count: 0
+                    property int maxTicks: 10
+
+                    onTriggered: {
+                        if (count < maxTicks) {
+                            // generate random "glitch" string
+                            let randomStr = ""
+                            for (let i = 0; i < resultLabel.finalResult.length; i++) {
+                                randomStr += resultLabel.charSet.charAt(Math.floor(Math.random() * resultLabel.charSet.length))
+                            }
+                            resultLabel.text = randomStr
+                            count++
+                        } else {
+                            resultLabel.text = resultLabel.finalResult
+                            stop()
+                        }
+                    }
+                }
+
+                background: Rectangle {
+                    color: "transparent"
+                    border.color: "#2bff00"
+                    border.width: 1
+                    opacity: 0.3
+                    
+                    SequentialAnimation on opacity {
+                        loops: Animation.Infinite
+                        NumberAnimation { from: 0.1; to: 0.5; duration: 1000 }
+                        NumberAnimation { from: 0.5; to: 0.1; duration: 1000 }
+                    }
                 }
             }
         }
