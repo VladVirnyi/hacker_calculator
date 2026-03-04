@@ -1,41 +1,40 @@
 import sys
-from PySide6.QtWidgets import QApplication, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
+import os
+from PySide6.QtCore import QObject, Slot, Signal, Property
+from PySide6.QtGui import QGuiApplication
+from PySide6.QtQml import QQmlApplicationEngine
 
-class HackerCalculator(QWidget):
+class HackerCalculator(QObject): #changed from QWidget to QObject
     def __init__(self):
         super().__init__()
+        self._result = "THE RESULT IS: ..."
 
-        widget = QWidget()
-        self.setWindowTitle("Hacker Calculator")
+    #signal to notify QML when the result changes
+    resultChanged = Signal(str)
 
-        self.text_layout = QVBoxLayout()
+    #property to expose the result to QML
+    @Property(str, notify=resultChanged)
+    def result(self):
+        return self._result
 
-        self.setLayout(self.text_layout)
-
-        #first number input
-        self.num1_input = QLineEdit()
-        self.num1_input.setPlaceholderText("ENTER Y0UR F1RST NUMB3R")
-
-        #second number input
-        self.num2_input = QLineEdit()
-        self.num2_input.setPlaceholderText("ENTER YOUR SECOND NUMB3R")
-
-        #operation input
-        self.op_input = QLineEdit()
-        self.op_input.setPlaceholderText("ENTER 0PER@T1ON (+, -, *, /)")
-
-        #calculate button
-        self.calc_button = QPushButton("RUN EXPLOIT (CALCULATE)")
-        self.calc_button.clicked.connect(self.calculate_result)
-
-        self.result_label = QLabel("THE RESULT IS: ...")
-
-        self.text_layout.addWidget(self.num1_input)
-        self.text_layout.addWidget(self.num2_input)
-        self.text_layout.addWidget(self.op_input)
-        self.text_layout.addWidget(self.calc_button)
-        self.text_layout.addWidget(self.result_label)
-
+    @Slot(str, str, str)  # @Slot decorator to make this method callable from QML
+    def calculate(self, n1, n2, op):
+        try:
+            num1 = float(n1)
+            num2 = float(n2)
+            
+            if op == "+": res = num1 + num2
+            elif op == "-": res = num1 - num2
+            elif op == "*": res = num1 * num2
+            elif op == "/": res = num1 / num2 if num2 != 0 else "Error"
+            else: res = "Unknown OP"
+            
+            self._result = f"THE RESULT IS: {res}"
+        except ValueError:
+            self._result = "ERROR: ENTER NUMBERS"
+        
+        self.resultChanged.emit(self._result)
+    
     def calculate_result(self):
         try:
             n1 = float(self.num1_input.text())
@@ -60,14 +59,21 @@ class HackerCalculator(QWidget):
 
 
 
-if __name__ == "__main__":
-    app = QApplication([]) # Does not work in Windows for now
-    with open("design.qml", "r", encoding="utf-8") as file:
-        style_sheet = (file.read())
-    app.setStyleSheet(style_sheet)
-    
-    widget = HackerCalculator()
-    widget.resize(800, 600)
-    widget.show()
+def main():
+    app = QGuiApplication(sys.argv) # Does not work in Windows for now
+    engine = QQmlApplicationEngine()
+
+    calculator = HackerCalculator()
+
+    engine.rootContext().setContextProperty("calculator", calculator)
+
+    qml_file = os.path.join(os.path.dirname(__file__), "design.qml")
+    engine.load(qml_file)
+
+    if not engine.rootObjects():
+        sys.exit(-1)
 
     sys.exit(app.exec())
+
+if __name__ == "__main__":
+    main()
